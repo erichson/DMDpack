@@ -7,8 +7,9 @@ from numpy.testing import assert_raises
 #************************************************************************** 
 
 
-def dmd(A, k=None, p=5, q=2, modes='standard', return_amplitudes=True,
-        return_vandermonde=True, svd='rand', rsvd_type='fast', order=True):
+def dmd(A, dt = 1, k=None, p=5, q=2, modes='standard',
+        return_amplitudes=True, return_vandermonde=True, 
+        svd='rand', rsvd_type='fast', order=True):
     """
     Dynamic Mode Decomposition.
 
@@ -23,6 +24,8 @@ def dmd(A, k=None, p=5, q=2, modes='standard', return_amplitudes=True,
     ----------
     A : array_like
         Real/complex input matrix  `a` with dimensions `(m, n)`.
+    dt : scalar or array_like  
+        Factor specifying the time difference between the observations.      
     k : int, optional
         If `k < (n-1)` low-rank Dynamic Mode Decomposition is computed.
     p : int, optional
@@ -38,28 +41,32 @@ def dmd(A, k=None, p=5, q=2, modes='standard', return_amplitudes=True,
         True: return amplitudes in addition to dynamic modes. 
     return_vandermonde : bool `{True, False}`
         True: return Vandermonde matrix in addition to dynamic modes and amplitudes.
-    svd : str `{'rand', 'partial', 'trancated'}`
+    svd : str `{'rand', 'partial', 'truncated'}`
         'rand' : uses randomized singular value decomposition (default). 
         'partial' : uses partial singular value decomposition.
-        'trancated' : uses trancated singular value decomposition.
+        'truncated' : uses trancated singular value decomposition.
     rsvd_type : str `{'standard', 'fast'}`
         'standard' : (default) Standard algorithm as described in [1, 2]. 
         'fast' : Version II algorithm as described in [2].       
     order :  bool `{True, False}`
-        True: return modes sorted according to the amplitudes
+        True: return modes sorted according to the amplitudes.
 
     Returns
     -------
     F : array_like
         Matrix containing the dynamic modes of shape `(m, n-1)`  or `(m, k)`.
-    b_gpu : array_like
+    b : array_like, optional
         1-D array containing the amplitudes of length `min(n-1, k)`.
-    V : array_like
+    V : array_like, optional
         Vandermonde matrix of shape `(n-1, n-1)`  or `(k, n-1)`.
+    omega : array_like
+        Time scaled eigenvalues: `ln(l)/dt`. 
 
     Notes
     -----
     
+    Examples
+    --------
 
     References
     ----------
@@ -82,7 +89,22 @@ def dmd(A, k=None, p=5, q=2, modes='standard', return_amplitudes=True,
  
     #Shape of D
     m, n = A.shape   
-
+    dat_type =  A.dtype
+    if  dat_type == np.float32: 
+        isreal = True
+        real_type = np.float32
+    elif dat_type == np.float64: 
+        isreal = True
+        real_type = np.float64  
+    elif dat_type == np.complex64:
+        isreal = False 
+        real_type = np.float32
+    elif dat_type == np.complex128:
+        isreal = False 
+        real_type = np.float64
+    else:
+        return "A.dtype is not supported"
+        
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Split data into lef and right snapshot sequence
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -108,7 +130,7 @@ def dmd(A, k=None, p=5, q=2, modes='standard', return_amplitudes=True,
             # reverse the n first rows of vt
             Vh[ :k , : ] = Vh[ k-1::-1 , : ]     
         
-        elif svd=="trancated":
+        elif svd=="truncated":
             U, s, Vh = sci.linalg.svd( X ,  compute_uv=True,
                                   full_matrices=False, 
                                   overwrite_a=False,
@@ -132,13 +154,16 @@ def dmd(A, k=None, p=5, q=2, modes='standard', return_amplitudes=True,
     #real: M = U.T * Y * Vt.T * S**-1
     #complex: M = U.H * Y * Vt.H * S**-1
     #Let G = Y * Vt.H * S**-1, hence M = M * G
-    G = np.dot( Y , Vh.conj().T * s**-1)
+    Vscaled = Vh.conj().T * s**-1
+    G = np.dot( Y , Vscaled ) 
     M = np.dot( U.conj().T , G )
      
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Eigen Decomposition
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     l, W = np.linalg.eig( M )    
+
+    omega = np.log(l) / dt
  
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     #Compute DMD Modes 
@@ -162,8 +187,9 @@ def dmd(A, k=None, p=5, q=2, modes='standard', return_amplitudes=True,
             sort_idx = sorted(range(len(b.real)), key=lambda j: b[j], reverse=True) 
             F = F[  :, sort_idx ]
             b = b[ sort_idx ]
+    
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #Compute Vandermonde matrix (CPU)
+    #Compute Vandermonde matrix
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if return_vandermonde==True: 
         V = np.fliplr(np.vander( l , N =  (n-1) ))     
@@ -171,12 +197,17 @@ def dmd(A, k=None, p=5, q=2, modes='standard', return_amplitudes=True,
         if order==True and return_amplitudes==True: 
             V = V[ sort_idx ,  : ]
     
+    
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #Return 
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    
     if return_amplitudes==True and return_vandermonde==True:
-        return F, b, V
+        return F, b, V, omega
     elif return_amplitudes==True and return_vandermonde==False:
-        return F, b,
+        return F, b, omega
     else:
-        return F    
+        return F, omega    
   
     #**************************************************************************   
     #End dmd
@@ -185,8 +216,9 @@ def dmd(A, k=None, p=5, q=2, modes='standard', return_amplitudes=True,
      
 
 
-def cdmd(A, k=None, c=None,  p=5, q=2, modes='standard', return_amplitudes=True,
-        return_vandermonde=True, svd='rand', rsvd_type='fast', order=True):
+def cdmd(A, dt = 1, k=None, c=None, sdist='unif', p=5, q=2, modes='standard',
+         return_amplitudes=True, return_vandermonde=True, svd='rand', 
+         rsvd_type='fast', order=True, trace=True):
     """
     Compressed Dynamic Mode Decomposition.
 
@@ -201,27 +233,29 @@ def cdmd(A, k=None, c=None,  p=5, q=2, modes='standard', return_amplitudes=True,
     ----------
     A : array_like
         Real/complex input matrix  `a` with dimensions `(m, n)`.
+    dt : scalar or array_like  
+        Factor specifying the time difference between the observations.  
     k : int, optional
         If `k < (n-1)` low-rank Dynamic Mode Decomposition is computed.
     c : float, [0,1]
         Parameter specifying the compression rate.         
+    sdist : str `{'unif', 'norm', 'sparse', 'vsparse'}`  
+        Specify the distribution of the sensing matrix S. 
     p : int, optional
         `p` sets the oversampling parameter for rSVD (default k=5).
     q : int, optional
         `q` sets the number of power iterations for rSVD (default=1).
-    modes : str `{'standard', 'exact', 'exact_scaled'}`
-        'standard' : uses the standard definition to compute the dynamic modes,
-                    `F = U * W`.
+    modes : str `{'exact', 'exact_scaled'}`
         'exact' : computes the exact dynamic modes, `F = Y * V * (S**-1) * W`.    
         'exact_scaled' : computes the exact dynamic modes, `F = (1/l) * Y * V * (S**-1) * W`.
     return_amplitudes : bool `{True, False}` 
         True: return amplitudes in addition to dynamic modes. 
     return_vandermonde : bool `{True, False}`
         True: return Vandermonde matrix in addition to dynamic modes and amplitudes.
-    svd : str `{'rand', 'partial', 'trancated'}`
+    svd : str `{'rand', 'partial', 'truncated'}`
         'rand' : uses randomized singular value decomposition (default). 
         'partial' : uses partial singular value decomposition.
-        'trancated' : uses trancated singular value decomposition.
+        'truncated' : uses trancated singular value decomposition.
     rsvd_type : str `{'standard', 'fast'}`
         'standard' : (default) Standard algorithm as described in [1, 2]. 
         'fast' : Version II algorithm as described in [2].       
@@ -232,7 +266,7 @@ def cdmd(A, k=None, c=None,  p=5, q=2, modes='standard', return_amplitudes=True,
     -------
     F : array_like
         Matrix containing the dynamic modes of shape `(m, n-1)`  or `(m, k)`.
-    b_gpu : array_like
+    b : array_like
         1-D array containing the amplitudes of length `min(n-1, k)`.
     V : array_like
         Vandermonde matrix of shape `(n-1, n-1)`  or `(k, n-1)`.
@@ -240,6 +274,8 @@ def cdmd(A, k=None, c=None,  p=5, q=2, modes='standard', return_amplitudes=True,
     Notes
     -----
     
+    Examples
+    --------
 
     References
     ----------
@@ -267,18 +303,73 @@ def cdmd(A, k=None, c=None,  p=5, q=2, modes='standard', return_amplitudes=True,
  
     #Shape of A
     m, n = A.shape   
+    dat_type =  A.dtype
+    if  dat_type == np.float32: 
+        isreal = True
+        real_type = np.float32
+    elif dat_type == np.float64: 
+        isreal = True
+        real_type = np.float64  
+    elif dat_type == np.complex64:
+        isreal = False 
+        real_type = np.float32
+    elif dat_type == np.complex128:
+        isreal = False 
+        real_type = np.float64
+    else:
+        return "A.dtype is not supported"
 
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Compress
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if c==None:
         Ac = A
     else:
-        r = np.ceil(m*(1-c))
-        print "Compression rate %0.0f" %c
-        print "Rows compressed from %0.0f" %m + " to %0.0f"  %r 
-        S = np.array( np.random.uniform( 0 , 2 , size=( r , m ) ) )
-        #S = np.array( np.random.standard_normal((n, m) ))
+        if trace==True: print "Rows compressed from %0.0f" %m + " to %0.0f"  %c
 
-        Ac = np.dot( S , A )  
+        if sdist=='unif':   
+            S = np.array( np.random.uniform( -1 , 1 , size=( c, m ) ) , dtype = dat_type ) 
+            if isreal==False: 
+                S += 1j * np.array( np.random.uniform(-1 , 1 , size=( c, m ) ) , dtype = dat_type )
+        
+        if sdist=='punif':   
+            S = np.array( np.random.uniform( 0 , 1 , size=( c, m ) ) , dtype = dat_type ) 
+            if isreal==False: 
+                S += 1j * np.array( np.random.uniform(0 , 1 , size=( c, m ) ) , dtype = dat_type )
+            
+        elif sdist=='norm':   
+            S = np.array( np.random.standard_normal( size=( c, m ) ) , dtype = dat_type ) 
+            if isreal==False: 
+                S += 1j * np.array( np.random.standard_normal( size=( c, m ) ) , dtype = dat_type )     
+            
+        elif sdist=='sparse':   
+            sf = np.sqrt(m)
+            density = 1./sf
+            S = sci.sparse.rand(c, m, density=density, format='csr', dtype=np.float32, random_state=None)
+            if isreal==False: 
+                S += sci.sparse.rand(c, m, density=density, format='csr', dtype=np.float32, random_state=None)
+            if trace==True: print "Sparse: %f" %(1. - 1./sf) + " zeros "
+            #S = np.round(S)
+            
+         
+        elif sdist=='vsparse':         
+            sf = m / np.log(m)
+            S = np.array( np.random.choice( a=np.array( [1,0,1], np.int ) , p=np.array( [ 1./(2.*sf), 1. - 1./sf , 1./(2.*sf)] ), size=( c, m ), replace=True ) , dtype = np.int) 
+            if isreal==False: 
+                S += 1j * np.array( np.random.choice( a=np.array( [1,0,1], np.int ) , p=np.array( [ 1./(2.*sf), 1. - 1./sf , 1./(2.*sf)] ), size=( c, m ), replace=True ) , dtype = np.int)     
+            #if trace==True: print "Sparse: %f" %(1. - 1./sf) + " zeros "
+            
+        elif sdist=='sobol':   
+            S = np.array( i4_sobol_generate( c, m ) , dtype = dat_type) 
+            if isreal==False: 
+                S += 1j * np.array( i4_sobol_generate( c, m ) , dtype = dat_type) 
+            
+            
+        #Compress input matrix
+        Ac = S.dot(A)    
+
+    
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Split data into lef and right snapshot sequence
@@ -305,7 +396,7 @@ def cdmd(A, k=None, c=None,  p=5, q=2, modes='standard', return_amplitudes=True,
             # reverse the n first rows of vt
             Vh[ :k , : ] = Vh[ k-1::-1 , : ]     
         
-        elif svd=="trancated":
+        elif svd=="truncated":
             U, s, Vh = sci.linalg.svd( X ,  compute_uv=True,
                                   full_matrices=False, 
                                   overwrite_a=False,
@@ -329,7 +420,8 @@ def cdmd(A, k=None, c=None,  p=5, q=2, modes='standard', return_amplitudes=True,
     #real: M = U.T * Y * Vt.T * S**-1
     #complex: M = U.H * Y * Vt.H * S**-1
     #Let G = Y * Vt.H * S**-1, hence M = M * G
-    G = np.dot( Y , Vh.conj().T * s**-1)
+    Vscaled = Vh.conj().T * s**-1
+    G = np.dot( Y , Vscaled )
     M = np.dot( U.conj().T , G )
      
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -338,21 +430,19 @@ def cdmd(A, k=None, c=None,  p=5, q=2, modes='standard', return_amplitudes=True,
     print M.shape
     l, W = np.linalg.eig( M )    
  
+    omega = np.log(l) / dt
+         
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     #Compute DMD Modes 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-#    if modes=='standard': 
-#        F = np.dot( U , W )    
-#    elif modes=='exact': 
-#        F = np.dot( G , W )
-#    elif modes=='exact_scaled':     
-#        F = np.dot((1/l) * G , W )
-#    else: 
-#        raise ValueError('Type of modes is not supported, choose "exact" or "standard".')
+    if modes=='exact': 
+        F = np.dot( A[ : , range( 1 , n ) ] , np.dot( Vscaled , W ) )   
+    elif modes=='exact_scaled':  
+        F = np.dot( A[ : , range( 1 , n ) ] , np.dot( Vscaled , W ) ) * ( 1/l )
+    else: 
+        raise ValueError('Type of modes is not supported, choose "exact" or "standard".')
+    
 
-    F = np.dot( A[ : , range( 1 , n ) ] , np.dot(Vh.conj().T * s**-1, W ) )   
-    
-    
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Compute amplitueds b using least-squares: Fb=x1
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~     
@@ -373,15 +463,17 @@ def cdmd(A, k=None, c=None,  p=5, q=2, modes='standard', return_amplitudes=True,
             V = V[ sort_idx ,  : ]
     
     if return_amplitudes==True and return_vandermonde==True:
-        return F, b, V
+        return F, b, V, omega
     elif return_amplitudes==True and return_vandermonde==False:
-        return F, b,
+        return F, b, omega
     else:
-        return F    
+        return F , omega   
   
     #**************************************************************************   
     #End cDMD
     #**************************************************************************  
+
+
 
 
 def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
@@ -450,8 +542,7 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
 
     Examples
     --------
-    >>> import numpy as np
-    >>> import scipy as sci
+
 
     
     """
@@ -485,22 +576,36 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     #Generate a random sampling matrix O
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if sdist=='unif':   
-        O = np.array( np.random.uniform( 0 , 1 , size=(n, k+p) ) , dtype = dat_type ) 
+        O = np.array( np.random.uniform( -1 , 1 , size=( n, k+p ) ) , dtype = dat_type ) 
         if isreal==False: 
-            O += 1j * np.array( np.random.uniform(-1 , 1 , size=(n, k+p) ) , dtype=real_type )
-     
-    if sdist=='norm':   
-        O = np.array( np.random.standard_normal( size=(n, k+p) ) , dtype = dat_type ) 
-        if isreal==False: 
-            O += 1j * np.array( np.random.standard_normal( size=(n, k+p) ) , dtype=real_type )     
-     
-    if sdist=='sparse':   
-        sf = np.sqrt(n)       
-        #sf = n / np.log(n)
-        O = np.array( np.random.choice( a=np.array( [1,0,1] ) , p=np.array( [ 1./(2.*sf), 1. - 1./sf , 1./(2.*sf)] ), size=(n, k+p), replace=True ) , dtype = dat_type) 
+            O += 1j * np.array( np.random.uniform(-1 , 1 , size=( n, k+p  ) ) , dtype = dat_type )
 
-    if sdist=='sobol':   
-        O = np.array( i4_sobol_generate(k+p, N) , dtype = dat_type) 
+    if sdist=='punif':   
+        O = np.array( np.random.uniform( 0 , 1 , size=( n, k+p  ) ) , dtype = dat_type ) 
+        if isreal==False: 
+            O += 1j * np.array( np.random.uniform(0 , 1 , size=( n, k+p  ) ) , dtype = dat_type )
+      
+    elif sdist=='norm':   
+        O = np.array( np.random.standard_normal( size=( n, k+p  ) ) , dtype = dat_type ) 
+        if isreal==False: 
+            O += 1j * np.array( np.random.standard_normal( size=( n, k+p  ) ) , dtype = dat_type )     
+ 
+    elif sdist=='sparse':   
+        sf = np.sqrt(n)       
+        O = np.array( np.random.choice( a=np.array( [1,0,1], np.int ) , p=np.array( [ 1./(2.*sf), 1. - 1./sf , 1./(2.*sf)] ), size=( n, k+p  ), replace=True ) , dtype = np.int) 
+        if isreal==False: 
+            O += 1j * np.array( np.random.choice( a=np.array( [1,0,1], np.int ) , p=np.array( [ 1./(2.*sf), 1. - 1./sf , 1./(2.*sf)] ), size=( n, k+p  ), replace=True ) , dtype = np.int)     
+ 
+    elif sdist=='vsparse':         
+        sf = n / np.log(n)
+        O = np.array( np.random.choice( a=np.array( [1,0,1], np.int ) , p=np.array( [ 1./(2.*sf), 1. - 1./sf , 1./(2.*sf)] ), size=( n, k+p  ), replace=True ) , dtype = np.int) 
+        if isreal==False: 
+            O += 1j * np.array( np.random.choice( a=np.array( [1,0,1], np.int ) , p=np.array( [ 1./(2.*sf), 1. - 1./sf , 1./(2.*sf)] ), size=( n, k+p  ), replace=True ) , dtype = np.int)     
+ 
+    elif sdist=='sobol':   
+        O = np.array( i4_sobol_generate( n, k+p  ) , dtype = dat_type) 
+        if isreal==False: 
+            O += 1j * np.array( i4_sobol_generate( n, k+p  ) , dtype = dat_type) 
     
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -579,7 +684,7 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
         
     #**************************************************************************   
     #End rsvd
-    #**************************************************************************        
+    #**************************************************************************       
 
      
 if __name__ == "__main__":
