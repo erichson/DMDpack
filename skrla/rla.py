@@ -3,13 +3,14 @@ import numpy as np
 import scipy as sci
 import scipy.sparse.linalg as scislin
 from numpy.testing import assert_raises
+
 #**************************************************************************   
 #************************************************************************** 
 
 
-def dmd(A, dt = 1, k=None, p=5, q=2, modes='standard',
+def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
         return_amplitudes=True, return_vandermonde=True, 
-        svd='rand', rsvd_type='fast', order=True):
+        svd='rsvd', rsvd_type='fast', sdist='punif', order=True):
     """
     Dynamic Mode Decomposition.
 
@@ -41,13 +42,14 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='standard',
         True: return amplitudes in addition to dynamic modes. 
     return_vandermonde : bool `{True, False}`
         True: return Vandermonde matrix in addition to dynamic modes and amplitudes.
-    svd : str `{'rand', 'partial', 'truncated'}`
-        'rand' : uses randomized singular value decomposition (default). 
+    svd : str `{'rsvd', 'partial', 'truncated'}`
+        'rsvd' : uses randomized singular value decomposition (default). 
         'partial' : uses partial singular value decomposition.
         'truncated' : uses trancated singular value decomposition.
     rsvd_type : str `{'standard', 'fast'}`
         'standard' : (default) Standard algorithm as described in [1, 2]. 
-        'fast' : Version II algorithm as described in [2].       
+        'fast' : Version II algorithm as described in [2].  
+    sdist : str `{'unif', 'punif', 'norm', 'sparse', 'vsparse'}`
     order :  bool `{True, False}`
         True: return modes sorted according to the amplitudes.
 
@@ -115,11 +117,8 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='standard',
     #Singular Value Decomposition
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~        
     if k != None:
-        if svd=="rand":
-            U, s, Vh = rsvd( X, k=k , p=p , q=q , method=rsvd_type )  
-        
-        elif svd=="csvd":
-            U, s, Vh = cSVD( X , k=k, q=q)  
+        if svd=="rsvd":
+            U, s, Vh = rsvd( X, k=k , p=p , q=q , sdist=sdist, method=rsvd_type )  
         
         elif svd=="partial":    
             U, s, Vh = scislin.svds( X , k=k )   
@@ -183,24 +182,29 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='standard',
     if return_amplitudes==True:   
         b , _ , _ , _ = sci.linalg.lstsq( F , A[ : , 0 ])
 
-        if order==True: 
-            sort_idx = sorted(range(len(b.real)), key=lambda j: b[j], reverse=True) 
-            F = F[  :, sort_idx ]
-            b = b[ sort_idx ]
-    
+
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Compute Vandermonde matrix
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if return_vandermonde==True: 
         V = np.fliplr(np.vander( l , N =  (n-1) ))     
         
-        if order==True and return_amplitudes==True: 
-            V = V[ sort_idx ,  : ]
     
-    
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #Order
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if order==True: 
+        sort_idx = sorted(range(len(omega.real)), key=lambda j: np.abs(omega[j]), reverse=False) 
+        F = F[  :, sort_idx ]
+        omega = omega[ sort_idx ]  
+        if return_amplitudes==True: b = b[ sort_idx ]
+        if return_amplitudes==True: V = V[ sort_idx ,  : ]
+
+
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Return 
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
+    
     
     if return_amplitudes==True and return_vandermonde==True:
         return F, b, V, omega
@@ -216,8 +220,8 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='standard',
      
 
 
-def cdmd(A, dt = 1, k=None, c=None, sdist='unif', p=5, q=2, modes='standard',
-         return_amplitudes=True, return_vandermonde=True, svd='rand', 
+def cdmd(A, dt = 1, k=None, c=None, sdist='unif', sf=3, p=5, q=2, modes='exact',
+         return_amplitudes=True, return_vandermonde=True, svd='rsvd', 
          rsvd_type='fast', order=True, trace=True):
     """
     Compressed Dynamic Mode Decomposition.
@@ -239,8 +243,10 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='unif', p=5, q=2, modes='standard',
         If `k < (n-1)` low-rank Dynamic Mode Decomposition is computed.
     c : float, [0,1]
         Parameter specifying the compression rate.         
-    sdist : str `{'unif', 'norm', 'sparse', 'vsparse'}`  
+    sdist : str `{'unif', 'punif', 'norm', 'sparse'}`  
         Specify the distribution of the sensing matrix S. 
+    sf : int, optional
+        `sf` sets the sparsity factor for the `sparse` sdist.
     p : int, optional
         `p` sets the oversampling parameter for rSVD (default k=5).
     q : int, optional
@@ -252,7 +258,7 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='unif', p=5, q=2, modes='standard',
         True: return amplitudes in addition to dynamic modes. 
     return_vandermonde : bool `{True, False}`
         True: return Vandermonde matrix in addition to dynamic modes and amplitudes.
-    svd : str `{'rand', 'partial', 'truncated'}`
+    svd : str `{'rsvd', 'partial', 'truncated'}`
         'rand' : uses randomized singular value decomposition (default). 
         'partial' : uses partial singular value decomposition.
         'truncated' : uses trancated singular value decomposition.
@@ -344,48 +350,31 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='unif', p=5, q=2, modes='standard',
                 S += 1j * np.array( np.random.standard_normal( size=( c, m ) ) , dtype = dat_type )     
             
         elif sdist=='sparse':   
-            sf = np.sqrt(m)
-            density = 1./sf
-            S = sci.sparse.rand(c, m, density=density, format='csr', dtype=np.float32, random_state=None)
+            density = 1-sf
+            S = sci.sparse.rand(c, m, density=density, format='coo', dtype=dat_type, random_state=None)
             if isreal==False: 
-                S += sci.sparse.rand(c, m, density=density, format='csr', dtype=np.float32, random_state=None)
-            if trace==True: print "Sparse: %f" %(1. - 1./sf) + " zeros "
-            #S = np.round(S)
-            
-         
-        elif sdist=='vsparse':         
-            sf = m / np.log(m)
-            S = np.array( np.random.choice( a=np.array( [1,0,1], np.int ) , p=np.array( [ 1./(2.*sf), 1. - 1./sf , 1./(2.*sf)] ), size=( c, m ), replace=True ) , dtype = np.int) 
-            if isreal==False: 
-                S += 1j * np.array( np.random.choice( a=np.array( [1,0,1], np.int ) , p=np.array( [ 1./(2.*sf), 1. - 1./sf , 1./(2.*sf)] ), size=( c, m ), replace=True ) , dtype = np.int)     
-            #if trace==True: print "Sparse: %f" %(1. - 1./sf) + " zeros "
-            
-        elif sdist=='sobol':   
-            S = np.array( i4_sobol_generate( c, m ) , dtype = dat_type) 
-            if isreal==False: 
-                S += 1j * np.array( i4_sobol_generate( c, m ) , dtype = dat_type) 
-            
+                S += 1j * sci.sparse.rand(c, m, density=density, format='coo', dtype=dat_type, random_state=None)
+            if trace==True: print "Sparse: %f" %sf + " zeros "
+            S = S.tocsr()
             
         #Compress input matrix
+        #S = S / np.linalg.norm(S, axis=0) 
         Ac = S.dot(A)    
-
-    
-
+        
+        
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Split data into lef and right snapshot sequence
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
     X = Ac[ : , range( 0 , n-1 ) ] #pointer
     Y = Ac[ : , range( 1 , n ) ] #pointer   
+     
      
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Singular Value Decomposition
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~        
     if k != None:
-        if svd=="rand":
+        if svd=="rsvd":
             U, s, Vh = rsvd( X, k=k , p=p , q=q , method=rsvd_type )  
-        
-        elif svd=="csvd":
-            U, s, Vh = cSVD( X , k=k, q=q)  
         
         elif svd=="partial":    
             U, s, Vh = scislin.svds( X , k=k )   
@@ -420,14 +409,15 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='unif', p=5, q=2, modes='standard',
     #real: M = U.T * Y * Vt.T * S**-1
     #complex: M = U.H * Y * Vt.H * S**-1
     #Let G = Y * Vt.H * S**-1, hence M = M * G
+
+    
     Vscaled = Vh.conj().T * s**-1
     G = np.dot( Y , Vscaled )
-    M = np.dot( U.conj().T , G )
+    M = np.dot( U.conj().T , G ) 
      
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Eigen Decomposition
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    print M.shape
     l, W = np.linalg.eig( M )    
  
     omega = np.log(l) / dt
@@ -449,18 +439,27 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='unif', p=5, q=2, modes='standard',
     if return_amplitudes==True:   
         b , _ , _ , _ = sci.linalg.lstsq( F , A[ : , 0 ])
 
-        if order==True: 
-            sort_idx = sorted(range(len(b.real)), key=lambda j: b[j], reverse=True) 
-            F = F[  :, sort_idx ]
-            b = b[ sort_idx ]
+
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Compute Vandermonde matrix (CPU)
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if return_vandermonde==True: 
         V = np.fliplr(np.vander( l , N =  (n-1) ))     
         
-        if order==True and return_amplitudes==True: 
-            V = V[ sort_idx ,  : ]
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #Order
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if order==True: 
+        sort_idx = sorted(range(len(omega.real)), key=lambda j: np.abs(omega[j]), reverse=False) 
+        F = F[  :, sort_idx ]
+        omega = omega[ sort_idx ]  
+        if return_amplitudes==True: b = b[ sort_idx ]
+        if return_amplitudes==True: V = V[ sort_idx ,  : ]
+
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #Return
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
     
     if return_amplitudes==True and return_vandermonde==True:
         return F, b, V, omega
@@ -511,7 +510,7 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     method : str `{'standard', 'fast'}`
         'standard' : Standard algorithm as described in [1, 2]
         'fast' : Version II algorithm as described in [2]                 
-    sdist : str `{'unif', 'norm'}`
+    sdist : str `{'unif', 'punif', 'norm', 'sparse', 'vsparse'}`
     
     Returns
     -------
@@ -591,31 +590,37 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
             O += 1j * np.array( np.random.standard_normal( size=( n, k+p  ) ) , dtype = dat_type )     
  
     elif sdist=='sparse':   
-        sf = np.sqrt(n)       
-        O = np.array( np.random.choice( a=np.array( [1,0,1], np.int ) , p=np.array( [ 1./(2.*sf), 1. - 1./sf , 1./(2.*sf)] ), size=( n, k+p  ), replace=True ) , dtype = np.int) 
+        sf = 3 
+        density = 1./sf
+        O = sci.sparse.rand(n, k+p, density=density, format='csr', dtype=dat_type, random_state=None).toarray()          
         if isreal==False: 
-            O += 1j * np.array( np.random.choice( a=np.array( [1,0,1], np.int ) , p=np.array( [ 1./(2.*sf), 1. - 1./sf , 1./(2.*sf)] ), size=( n, k+p  ), replace=True ) , dtype = np.int)     
+            O += 1j * sci.sparse.rand(n, k+p, density=density, format='csr', dtype=dat_type, random_state=None).toarray()  
+
  
     elif sdist=='vsparse':         
-        sf = n / np.log(n)
-        O = np.array( np.random.choice( a=np.array( [1,0,1], np.int ) , p=np.array( [ 1./(2.*sf), 1. - 1./sf , 1./(2.*sf)] ), size=( n, k+p  ), replace=True ) , dtype = np.int) 
+        sf = np.sqrt(n) 
+        density = 1./sf
+        O = sci.sparse.rand(n, k+p, density=density, format='csr', dtype=dat_type, random_state=None).toarray() 
         if isreal==False: 
-            O += 1j * np.array( np.random.choice( a=np.array( [1,0,1], np.int ) , p=np.array( [ 1./(2.*sf), 1. - 1./sf , 1./(2.*sf)] ), size=( n, k+p  ), replace=True ) , dtype = np.int)     
- 
+            O += 1j * sci.sparse.rand(n, k+p, density=density, format='csr', dtype=dat_type, random_state=None).toarray()
+         
     elif sdist=='sobol':   
-        O = np.array( i4_sobol_generate( n, k+p  ) , dtype = dat_type) 
+        O = np.array( i4_sobol_generate( n, k+p  ) , dtype = dat_type).toarray() 
         if isreal==False: 
-            O += 1j * np.array( i4_sobol_generate( n, k+p  ) , dtype = dat_type) 
+            O += 1j * np.array( i4_sobol_generate( n, k+p  ) , dtype = dat_type).toarray() 
     
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Build sample matrix Y : Y = A * O
     #Note: Y should approximate the range of A
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-    Y = np.dot( A , O )
-
     if sdist=='sparse': 
-        Y = Y * np.sqrt(sf)
+        Y = (O.T.dot(A.T)).T
+    else:    
+        Y = A.dot(O)
+
+    #if sdist=='sparse': 
+    #    Y = Y * np.sqrt(sf)
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Orthogonalize Y using economic QR decomposition: Y=QR
