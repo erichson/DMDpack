@@ -353,14 +353,16 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='unif', sf=3, p=5, q=2, modes='exact',
             density = 1-sf
             S = sci.sparse.rand(c, m, density=density, format='coo', dtype=dat_type, random_state=None)
             if isreal==False: 
-                S += 1j * sci.sparse.rand(c, m, density=density, format='coo', dtype=dat_type, random_state=None)
+                S.data += 1j * np.array( np.random.uniform(0 , 1 , size=( len(S.data) ) ) , dtype = dat_type )
             if trace==True: print "Sparse: %f" %sf + " zeros "
+            S.data *=2          
+            S.data -=1            
             S = S.tocsr()
             
         #Compress input matrix
-        #S = S / np.linalg.norm(S, axis=0) 
         Ac = S.dot(A)    
         
+        del(S)
         
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Split data into lef and right snapshot sequence
