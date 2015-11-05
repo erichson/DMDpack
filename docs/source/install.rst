@@ -11,7 +11,7 @@ Obtaining the Latest Software
 The latest stable and development versions of ``DMDpack`` can be downloaded 
 from `GitHub <https://github.com/Benli11/DMDpack>`_
 
-Online documentation is available at ``_
+Online documentation is available at `<http://dynamic-mode-decomposition.readthedocs.org/en/latest/>`_
 
 Installation Dependencies
 -------------------------

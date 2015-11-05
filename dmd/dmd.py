@@ -1,11 +1,15 @@
+"""
+
+Dynamic Mode Decomposition (DMD) python function.
+
+"""
+
 from __future__ import division
 import numpy as np
 import scipy as sci
 import scipy.sparse.linalg as scislin
 from numpy.testing import assert_raises
 
-#**************************************************************************   
-#************************************************************************** 
 
 
 def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',

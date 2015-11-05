@@ -1,8 +1,8 @@
 .. -*- rst -*-
 
-.. currentmodule:: dmd
+.. currentmodule:: dmd.dmd
 
-Linear Algebra Routines
+Dynamic Mode Decomposition Routines
 =======================
 
 .. autosummary::
