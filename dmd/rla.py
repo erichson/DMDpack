@@ -114,6 +114,9 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     if m < n:
         A = A.conj().T
         m , n = A.shape 
+        flipped = True
+    else: 
+       flipped = False 
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Generate a random sampling matrix O
@@ -190,7 +193,10 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
         U = np.dot( Q , U)
 
         #Return Trunc
-        return ( U[ : , range(k) ] , s[ range(k) ] , Vh[ range(k) , : ] ) 
+        if flipped==True:
+            return ( Vh.conj().T[ : ,  range(k) ] , s[ range(k) ] , U.conj().T[ range(k), : ] ) 
+        else: 
+            return ( U[ : , range(k) ] , s[ range(k) ] , Vh[ range(k) , : ] ) 
     
     if method == 'fast':
         #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -211,7 +217,11 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
         
         
         #Return Trunc
-        return ( U[ : , range(k) ] , s[ range(k) ] , V[ : , range(k) ].conj().T ) 
+        if flipped==True:
+            return ( V[ : ,  range(k) ] , s[ range(k) ] , U.conj().T[ range(k), : ] ) 
+        else: 
+            return ( U[ : , range(k) ] , s[ range(k) ] , V[ : , range(k) ].conj().T ) 
+        
         
     #**************************************************************************   
     #End rsvd
