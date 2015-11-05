@@ -9,8 +9,8 @@ from numpy.testing import assert_raises
 
 
 def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
-        return_amplitudes=True, return_vandermonde=True, 
-        svd='rsvd', rsvd_type='fast', sdist='punif', order=True):
+        return_amplitudes=False, return_vandermonde=False, 
+        svd='partial', rsvd_type='fast', sdist='punif', order=True):
     """
     Dynamic Mode Decomposition.
 
@@ -30,9 +30,9 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     k : int, optional
         If `k < (n-1)` low-rank Dynamic Mode Decomposition is computed.
     p : int, optional
-        `p` sets the oversampling parameter for rSVD (default k=5).
+        `p` sets the oversampling parameter for rSVD (default `k=5`).
     q : int, optional
-        `q` sets the number of power iterations for rSVD (default=1).
+        `q` sets the number of power iterations for rSVD (default=`1`).
     modes : str `{'standard', 'exact', 'exact_scaled'}`
         'standard' : uses the standard definition to compute the dynamic modes,
                     `F = U * W`.
@@ -51,7 +51,7 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
         'fast' : Version II algorithm as described in [2].  
     sdist : str `{'unif', 'punif', 'norm', 'sparse', 'vsparse'}`
     order :  bool `{True, False}`
-        True: return modes sorted according to the amplitudes.
+        True: return modes sorted.
 
     Returns
     -------
@@ -146,17 +146,18 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
                                   overwrite_a=False,
                                   check_finite=True)
     #EndIf    
-     
+
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Solve the LS problem to find estimate for M using the pseudo-inverse    
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
     #real: M = U.T * Y * Vt.T * S**-1
     #complex: M = U.H * Y * Vt.H * S**-1
     #Let G = Y * Vt.H * S**-1, hence M = M * G
+
     Vscaled = Vh.conj().T * s**-1
     G = np.dot( Y , Vscaled ) 
     M = np.dot( U.conj().T , G )
-     
+    
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Eigen Decomposition
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -204,8 +205,6 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Return 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~  
-    
-    
     if return_amplitudes==True and return_vandermonde==True:
         return F, b, V, omega
     elif return_amplitudes==True and return_vandermonde==False:
@@ -220,8 +219,8 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
      
 
 
-def cdmd(A, dt = 1, k=None, c=None, sdist='unif', sf=3, p=5, q=2, modes='exact',
-         return_amplitudes=True, return_vandermonde=True, svd='rsvd', 
+def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
+         return_amplitudes=False, return_vandermonde=False, svd='rsvd', 
          rsvd_type='fast', order=True, trace=True):
     """
     Compressed Dynamic Mode Decomposition.
@@ -244,13 +243,14 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='unif', sf=3, p=5, q=2, modes='exact',
     c : float, [0,1]
         Parameter specifying the compression rate.         
     sdist : str `{'unif', 'punif', 'norm', 'sparse'}`  
-        Specify the distribution of the sensing matrix S. 
+        Specify the distribution of the sensing matrix `S`. 
     sf : int, optional
-        `sf` sets the sparsity factor for the `sparse` sdist.
+        `sf` sets the sparsity factor for the `sparse` sdist, i.e. `sf=0.9` means
+        `90%` of the sensing matrix `S` entries are zero.
     p : int, optional
-        `p` sets the oversampling parameter for rSVD (default k=5).
+        `p` sets the oversampling parameter for rSVD (default `k=5`).
     q : int, optional
-        `q` sets the number of power iterations for rSVD (default=1).
+        `q` sets the number of power iterations for rSVD (`default=1`).
     modes : str `{'exact', 'exact_scaled'}`
         'exact' : computes the exact dynamic modes, `F = Y * V * (S**-1) * W`.    
         'exact_scaled' : computes the exact dynamic modes, `F = (1/l) * Y * V * (S**-1) * W`.
@@ -266,7 +266,7 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='unif', sf=3, p=5, q=2, modes='exact',
         'standard' : (default) Standard algorithm as described in [1, 2]. 
         'fast' : Version II algorithm as described in [2].       
     order :  bool `{True, False}`
-        True: return modes sorted according to the amplitudes
+        True: return modes sorted.
 
     Returns
     -------
@@ -292,13 +292,6 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='unif', sf=3, p=5, q=2, modes='exact',
     J. H. Tu, et al.
     "On Dynamic Mode Decomposition: Theory and Applications."
     arXiv preprint arXiv:1312.0041 (2013).
-    
-    N. B. Erichson and C. Donovan.
-    "Randomized Low-Rank Dynamic Mode Decomposition for Motion Detection"
-    Under Review.    
-    
-
-
     """
 
     #*************************************************************************
@@ -361,7 +354,6 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='unif', sf=3, p=5, q=2, modes='exact',
             
         #Compress input matrix
         Ac = S.dot(A)    
-        
         del(S)
         
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -411,8 +403,6 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='unif', sf=3, p=5, q=2, modes='exact',
     #real: M = U.T * Y * Vt.T * S**-1
     #complex: M = U.H * Y * Vt.H * S**-1
     #Let G = Y * Vt.H * S**-1, hence M = M * G
-
-    
     Vscaled = Vh.conj().T * s**-1
     G = np.dot( Y , Vscaled )
     M = np.dot( U.conj().T , G ) 
@@ -572,6 +562,9 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     else:
         return "A.dtype is not supported"
     
+    if m < n:
+        A = A.conj().T
+        m , n = A.shape 
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Generate a random sampling matrix O
@@ -591,21 +584,6 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
         if isreal==False: 
             O += 1j * np.array( np.random.standard_normal( size=( n, k+p  ) ) , dtype = dat_type )     
  
-    elif sdist=='sparse':   
-        sf = 3 
-        density = 1./sf
-        O = sci.sparse.rand(n, k+p, density=density, format='csr', dtype=dat_type, random_state=None).toarray()          
-        if isreal==False: 
-            O += 1j * sci.sparse.rand(n, k+p, density=density, format='csr', dtype=dat_type, random_state=None).toarray()  
-
- 
-    elif sdist=='vsparse':         
-        sf = np.sqrt(n) 
-        density = 1./sf
-        O = sci.sparse.rand(n, k+p, density=density, format='csr', dtype=dat_type, random_state=None).toarray() 
-        if isreal==False: 
-            O += 1j * sci.sparse.rand(n, k+p, density=density, format='csr', dtype=dat_type, random_state=None).toarray()
-         
     elif sdist=='sobol':   
         O = np.array( i4_sobol_generate( n, k+p  ) , dtype = dat_type).toarray() 
         if isreal==False: 
@@ -615,14 +593,10 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Build sample matrix Y : Y = A * O
     #Note: Y should approximate the range of A
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-    if sdist=='sparse': 
-        Y = (O.T.dot(A.T)).T
-    else:    
-        Y = A.dot(O)
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
+    Y = A.dot(O)
 
-    #if sdist=='sparse': 
-    #    Y = Y * np.sqrt(sf)
+    del(O)
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Orthogonalize Y using economic QR decomposition: Y=QR
@@ -665,7 +639,7 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
          
         #Recover right singular vectors
         U = np.dot( Q , U)
-         
+
         #Return Trunc
         return ( U[ : , range(k) ] , s[ range(k) ] , Vh[ range(k) , : ] ) 
     
@@ -685,6 +659,7 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
  
         U =  np.dot( Q , Vstar.conj().T )   
         V =  np.dot( Qstar , Ustar ) 
+        
         
         #Return Trunc
         return ( U[ : , range(k) ] , s[ range(k) ] , V[ : , range(k) ].conj().T ) 
