@@ -70,7 +70,6 @@ setup(
     keywords='dynamic mode decomposition, randomized singular value decomposition, object detection, rsvd, rpca, dmd',
 
     #packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
-    #packages=['rla*', 'tests*'],
     packages=find_packages(exclude=['tests*'])
 
 )

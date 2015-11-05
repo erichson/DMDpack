@@ -25,6 +25,7 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     to the amplitudes stored in the diagonal matrix `B`. `V` is a Vandermonde
     matrix describing the temporal evolution.
 
+
     Parameters
     ----------
     A : array_like
@@ -38,8 +39,7 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     q : int, optional
         `q` sets the number of power iterations for rSVD (default=`1`).
     modes : str `{'standard', 'exact', 'exact_scaled'}`
-        'standard' : uses the standard definition to compute the dynamic modes,
-                    `F = U * W`.
+        'standard' : uses the standard definition to compute the dynamic modes, `F = U * W`.
         'exact' : computes the exact dynamic modes, `F = Y * V * (S**-1) * W`.    
         'exact_scaled' : computes the exact dynamic modes, `F = (1/l) * Y * V * (S**-1) * W`.
     return_amplitudes : bool `{True, False}` 
@@ -53,9 +53,14 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     rsvd_type : str `{'standard', 'fast'}`
         'standard' : (default) Standard algorithm as described in [1, 2]. 
         'fast' : Version II algorithm as described in [2].  
-    sdist : str `{'unif', 'punif', 'norm', 'sparse', 'vsparse'}`
+    sdist : str `{'unif', 'punif', 'norm', 'sparse'}`
+        'unif' : Uniform `[-1,1]`.
+        'punif' : Uniform `[0,1]`.
+        'norm' : Normal `~N(0,1)`.
+        'sparse' : Sparse uniform `[-1,1]`.
     order :  bool `{True, False}`
         True: return modes sorted.
+
 
     Returns
     -------
@@ -68,8 +73,21 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     omega : array_like
         Time scaled eigenvalues: `ln(l)/dt`. 
 
+
     Notes
     -----
+
+
+    References
+    ----------
+    J. H. Tu, et al.
+    "On Dynamic Mode Decomposition: Theory and Applications" (2013).
+    (available at `arXiv <http://arxiv.org/abs/1312.0041>`_).   
+    
+    N. B. Erichson and C. Donovan.
+    "Randomized Low-Rank Dynamic Mode Decomposition for Motion Detection" (2015).
+    Under Review.    
+    
     
     Examples
     --------
@@ -140,16 +158,6 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     >>> plt.title('F2_tilde')
     >>> plt.show()     
 
-
-    References
-    ----------
-    J. H. Tu, et al.
-    "On dynamic mode decomposition: theory and applications."
-    arXiv preprint arXiv:1312.0041 (2013).
-    
-    N. B. Erichson and C. Donovan.
-    "Randomized Low-Rank Dynamic Mode Decomposition for Motion Detection"
-    Under Review.    
 
     """
 
@@ -302,6 +310,7 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     to the amplitudes stored in the diagonal matrix `B`. `V` is a Vandermonde
     matrix describing the temporal evolution.
 
+
     Parameters
     ----------
     A : array_like
@@ -338,6 +347,7 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     order :  bool `{True, False}`
         True: return modes sorted.
 
+
     Returns
     -------
     F : array_like
@@ -347,21 +357,28 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     V : array_like
         Vandermonde matrix of shape `(n-1, n-1)`  or `(k, n-1)`.
 
+
     Notes
     -----
+    
+    
+    References
+    ----------
+    S. L. Brunton, et al.
+    "Compressed Sensing and Dynamic Mode Decomposition" (2013).
+    (available at `arXiv <http://arxiv.org/abs/1312.5186>`_).    
+    
+    J. H. Tu, et al.
+    "On Dynamic Mode Decomposition: Theory and Applications" (2013).
+    (available at `arXiv <http://arxiv.org/abs/1312.0041>`_).    
+
     
     Examples
     --------
 
-    References
-    ----------
-    S. L. Brunton, et al.
-    "Compressed Sensing and Dynamic Mode Decomposition"
-    arXiv preprint arXiv:1312.5186 (2013).
+
+
     
-    J. H. Tu, et al.
-    "On Dynamic Mode Decomposition: Theory and Applications."
-    arXiv preprint arXiv:1312.0041 (2013).
     """
 
     #*************************************************************************
@@ -559,6 +576,7 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     
     If k > (n/1.5), partial SVD or trancated SVD might be faster. 
     
+    
     Parameters
     ----------
     A : array_like
@@ -570,9 +588,10 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     q : int
         `q` sets the number of power iterations (default=0).
     method : str `{'standard', 'fast'}`
-        'standard' : Standard algorithm as described in [1, 2]
-        'fast' : Version II algorithm as described in [2]                 
+        'standard' : Standard algorithm as described in [1, 2].
+        'fast' : Version II algorithm as described in [2].                 
     sdist : str `{'unif', 'punif', 'norm', 'sparse', 'vsparse'}`
+    
     
     Returns
     -------
@@ -583,9 +602,11 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     Vh : array_like
         Left singular values, array of shape `(k, n)`.
 
+
     Notes
     -----   
     Input matrix of shape `(m, n)`, where `n>m` is not supported yet.
+
 
     References
     ----------
@@ -600,6 +621,7 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     decompositions via randomized sampling on single core, multi core, 
     and GPU architectures" (2015).
     (available at `arXiv <http://arxiv.org/abs/1502.05366>`_).
+
 
     Examples
     --------

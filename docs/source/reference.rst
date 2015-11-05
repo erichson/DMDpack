@@ -5,7 +5,10 @@ Reference
 
 Dynamic Mode Decomposition Routines
 -----------------------------------
-.. toctree::
-   :maxdepth: 2
+.. automodule:: dmd
+	:members: dmd, cdmd
 
-   reference_dmd
+Randomized Linear Algebra Routines
+-----------------------------------
+.. automodule:: dmd
+	:members: rsvd
