@@ -4,14 +4,14 @@ try:
 except ImportError:
     print "The package 'setuptools' is required!"
 
-NAME ='scikit-rla'
+NAME ='DMDpack'
 VERSION ='1.0.0'
-DESCRIPTION ='Randomized Linear Algebra Tool-Kit'
-URL ='https://github.com/Benli11/scikit-rla'
+DESCRIPTION ='Dynamic Mode Decomposition'
+URL ='https://github.com/Benli11/DMDpack'
 AUTHER ='N. Benjamin Erichson'
 EMAIL ='nbe@st-andrews.ac.uk'
 LICENSE ='BSD'
-#PACKAGES = ['skrla', 'tools']
+#PACKAGES = ['dmd', 'tools']
 
       
       
@@ -67,7 +67,7 @@ setup(
     ],
 
     # What does your project relate to?
-    keywords='randomized linear algebra, object detection, rsvd, rpca, dmd',
+    keywords='dynamic mode decomposition, randomized singular value decomposition, object detection, rsvd, rpca, dmd',
 
     #packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
     #packages=['rla*', 'tests*'],
