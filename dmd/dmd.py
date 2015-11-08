@@ -31,34 +31,53 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     ----------
     A : array_like
         Real/complex input matrix  `a` with dimensions `(m, n)`.
+    
     dt : scalar or array_like  
         Factor specifying the time difference between the observations.      
+    
     k : int, optional
         If `k < (n-1)` low-rank Dynamic Mode Decomposition is computed.
+    
     p : int, optional
         `p` sets the oversampling parameter for rSVD (default `k=5`).
+    
     q : int, optional
         `q` sets the number of power iterations for rSVD (default=`1`).
+    
     modes : str `{'standard', 'exact', 'exact_scaled'}`
         'standard' : uses the standard definition to compute the dynamic modes, `F = U * W`.
+        
         'exact' : computes the exact dynamic modes, `F = Y * V * (S**-1) * W`.    
+        
         'exact_scaled' : computes the exact dynamic modes, `F = (1/l) * Y * V * (S**-1) * W`.
+    
     return_amplitudes : bool `{True, False}` 
         True: return amplitudes in addition to dynamic modes. 
+    
     return_vandermonde : bool `{True, False}`
         True: return Vandermonde matrix in addition to dynamic modes and amplitudes.
+    
     svd : str `{'rsvd', 'partial', 'truncated'}`
         'rsvd' : uses randomized singular value decomposition (default). 
+        
         'partial' : uses partial singular value decomposition.
+        
         'truncated' : uses trancated singular value decomposition.
+    
     rsvd_type : str `{'standard', 'fast'}`
         'standard' : (default) Standard algorithm as described in [1, 2]. 
+        
         'fast' : Version II algorithm as described in [2].  
+    
     sdist : str `{'unif', 'punif', 'norm', 'sparse'}`
         'unif' : Uniform `[-1,1]`.
+        
         'punif' : Uniform `[0,1]`.
+        
         'norm' : Normal `~N(0,1)`.
+        
         'sparse' : Sparse uniform `[-1,1]`.
+    
     order :  bool `{True, False}`
         True: return modes sorted.
 
@@ -67,10 +86,13 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     -------
     F : array_like
         Matrix containing the dynamic modes of shape `(m, n-1)`  or `(m, k)`.
+   
     b : array_like, optional
         1-D array containing the amplitudes of length `min(n-1, k)`.
+    
     V : array_like, optional
         Vandermonde matrix of shape `(n-1, n-1)`  or `(k, n-1)`.
+    
     omega : array_like
         Time scaled eigenvalues: `ln(l)/dt`. 
 
@@ -316,35 +338,52 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     ----------
     A : array_like
         Real/complex input matrix  `a` with dimensions `(m, n)`.
+    
     dt : scalar or array_like  
         Factor specifying the time difference between the observations.  
+    
     k : int, optional
         If `k < (n-1)` low-rank Dynamic Mode Decomposition is computed.
+    
     c : float, [0,1]
         Parameter specifying the compression rate.         
+    
     sdist : str `{'unif', 'punif', 'norm', 'sparse'}`  
         Specify the distribution of the sensing matrix `S`. 
+    
     sf : int, optional
         `sf` sets the sparsity factor for the `sparse` sdist, i.e. `sf=0.9` means
         `90%` of the sensing matrix `S` entries are zero.
+    
     p : int, optional
         `p` sets the oversampling parameter for rSVD (default `k=5`).
+    
     q : int, optional
         `q` sets the number of power iterations for rSVD (`default=1`).
+    
     modes : str `{'exact', 'exact_scaled'}`
         'exact' : computes the exact dynamic modes, `F = Y * V * (S**-1) * W`.    
+        
         'exact_scaled' : computes the exact dynamic modes, `F = (1/l) * Y * V * (S**-1) * W`.
+    
     return_amplitudes : bool `{True, False}` 
         True: return amplitudes in addition to dynamic modes. 
+    
     return_vandermonde : bool `{True, False}`
         True: return Vandermonde matrix in addition to dynamic modes and amplitudes.
+    
     svd : str `{'rsvd', 'partial', 'truncated'}`
         'rand' : uses randomized singular value decomposition (default). 
+        
         'partial' : uses partial singular value decomposition.
+        
         'truncated' : uses trancated singular value decomposition.
+    
     rsvd_type : str `{'standard', 'fast'}`
         'standard' : (default) Standard algorithm as described in [1, 2]. 
+        
         'fast' : Version II algorithm as described in [2].       
+    
     order :  bool `{True, False}`
         True: return modes sorted.
 
@@ -353,8 +392,10 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     -------
     F : array_like
         Matrix containing the dynamic modes of shape `(m, n-1)`  or `(m, k)`.
+    
     b : array_like
         1-D array containing the amplitudes of length `min(n-1, k)`.
+    
     V : array_like
         Vandermonde matrix of shape `(n-1, n-1)`  or `(k, n-1)`.
 

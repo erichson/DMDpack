@@ -6,21 +6,20 @@
 Welcome to DMDpack's documentation!
 ===================================
 
-Contents:
-
+Contents
+--------
 .. toctree::
    :maxdepth: 3
 
    install
+   examples
    reference
    authors
    license
    changes
 
-Indices and tables
-==================
-
+Index
+-----
 * :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
+
 

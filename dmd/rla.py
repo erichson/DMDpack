@@ -38,15 +38,21 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     ----------
     A : array_like
         Real/complex input matrix  `a` with dimensions `(m, n)`.
+
     k : int
         `k` is the target rank of the low-rank decomposition, k << min(m,n). 
+
     p : int
         `p` sets the oversampling parameter (default k=0).
+
     q : int
         `q` sets the number of power iterations (default=0).
+
     method : str `{'standard', 'fast'}`
         'standard' : Standard algorithm as described in [1, 2].
+        
         'fast' : Version II algorithm as described in [2].                 
+    
     sdist : str `{'unif', 'punif', 'norm', 'sparse', 'vsparse'}`
     
     
@@ -54,15 +60,17 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     -------
     U:  array_like
         Right singular values, array of shape `(m, k)`.
+    
     s : array_like
         Singular values, 1-d array of length `k`.
+    
     Vh : array_like
         Left singular values, array of shape `(k, n)`.
 
 
     Notes
     -----   
-    Input matrix of shape `(m, n)`, where `n>m` is not supported yet.
+    
 
 
     References
