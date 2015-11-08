@@ -70,6 +70,6 @@ setup(
     keywords='dynamic mode decomposition, randomized singular value decomposition, object detection, rsvd, rpca, dmd',
 
     #packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
-    packages=find_packages(exclude=['tests*'])
-
+    packages=find_packages(exclude=['tests*']),
+    test_suite='nose.collector'	
 )
