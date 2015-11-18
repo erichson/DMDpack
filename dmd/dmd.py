@@ -39,10 +39,10 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
         If `k < (n-1)` low-rank Dynamic Mode Decomposition is computed.
     
     p : int, optional
-        `p` sets the oversampling parameter for rSVD (default `k=5`).
+        `p` sets the oversampling parameter for rSVD (default `p=5`).
     
     q : int, optional
-        `q` sets the number of power iterations for rSVD (default=`1`).
+        `q` sets the number of power iterations for rSVD (default `q=1`).
     
     modes : str `{'standard', 'exact', 'exact_scaled'}`
         'standard' : uses the standard definition to compute the dynamic modes, `F = U * W`.
@@ -262,7 +262,7 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Eigen Decomposition
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    l, W = np.linalg.eig( M )    
+    l, W = sci.linalg.eig( M , right=True, overwrite_a=True )    
 
     omega = np.log(l) / dt
  
@@ -300,7 +300,7 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
         F = F[  :, sort_idx ]
         omega = omega[ sort_idx ]  
         if return_amplitudes==True: b = b[ sort_idx ]
-        if return_amplitudes==True: V = V[ sort_idx ,  : ]
+        if return_vandermonde==True: V = V[ sort_idx ,  : ]
 
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -539,7 +539,7 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Eigen Decomposition
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    l, W = np.linalg.eig( M )    
+    l, W = sci.linalg.eig( M , right=True, overwrite_a=True )    
  
     omega = np.log(l) / dt
          
@@ -576,7 +576,7 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
         F = F[  :, sort_idx ]
         omega = omega[ sort_idx ]  
         if return_amplitudes==True: b = b[ sort_idx ]
-        if return_amplitudes==True: V = V[ sort_idx ,  : ]
+        if return_vandermonde==True: V = V[ sort_idx ,  : ]
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Return

@@ -174,12 +174,15 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
             if( (2*i-1) % q == 0 ):
                 Z , _ = sci.linalg.qr( Z , mode='economic', check_finite=True)
        
-            Y = np.dot( A , Z )             
+            Y = np.dot( A , Z )
         #End for
+        del(Z)
      #End if       
         
     Q , _ = sci.linalg.qr( Y ,  mode='economic' , check_finite=True ) 
-       
+    
+    del(Y)
+    
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Project the data matrix a into a lower dimensional subspace
     #B = Q.T * A 
