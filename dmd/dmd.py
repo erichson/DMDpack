@@ -266,6 +266,15 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
 
     omega = np.log(l) / dt
  
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #Order
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if order==True: 
+        sort_idx = sorted(range(len(omega.real)), key=lambda j: np.abs(omega[j]), reverse=False) 
+        W = W[  :, sort_idx ]
+        l = l[ sort_idx ] 
+        omega = omega[ sort_idx ]  
+ 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     #Compute DMD Modes 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
@@ -291,17 +300,6 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     if return_vandermonde==True: 
         V = np.fliplr(np.vander( l , N =  (n-1) ))     
         
-    
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #Order
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if order==True: 
-        sort_idx = sorted(range(len(omega.real)), key=lambda j: np.abs(omega[j]), reverse=False) 
-        F = F[  :, sort_idx ]
-        omega = omega[ sort_idx ]  
-        if return_amplitudes==True: b = b[ sort_idx ]
-        if return_vandermonde==True: V = V[ sort_idx ,  : ]
-
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Return 
@@ -348,7 +346,7 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     c : float, [0,1]
         Parameter specifying the compression rate.         
     
-    sdist : str `{'unif', 'punif', 'norm', 'sparse'}`  
+    sdist : str `{'unif', 'punif', 'norm', 'sparse', 'spixel'}`  
         Specify the distribution of the sensing matrix `S`. 
     
     sf : int, optional
@@ -460,17 +458,26 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
             S = np.array( np.random.uniform( -1 , 1 , size=( c, m ) ) , dtype = dat_type ) 
             if isreal==False: 
                 S += 1j * np.array( np.random.uniform(-1 , 1 , size=( c, m ) ) , dtype = dat_type )
-        
+            #Compress input matrix
+            Ac = S.dot(A)    
+            del(S)
+            
         if sdist=='punif':   
             S = np.array( np.random.uniform( 0 , 1 , size=( c, m ) ) , dtype = dat_type ) 
             if isreal==False: 
                 S += 1j * np.array( np.random.uniform(0 , 1 , size=( c, m ) ) , dtype = dat_type )
+            #Compress input matrix
+            Ac = S.dot(A)    
+            del(S)
             
         elif sdist=='norm':   
             S = np.array( np.random.standard_normal( size=( c, m ) ) , dtype = dat_type ) 
             if isreal==False: 
                 S += 1j * np.array( np.random.standard_normal( size=( c, m ) ) , dtype = dat_type )     
-            
+            #Compress input matrix
+            Ac = S.dot(A)    
+            del(S)                
+                        
         elif sdist=='sparse':   
             density = 1-sf
             S = sci.sparse.rand(c, m, density=density, format='coo', dtype=dat_type, random_state=None)
@@ -480,10 +487,14 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
             S.data *=2          
             S.data -=1            
             S = S.tocsr()
+            #Compress input matrix
+            Ac = S.dot(A)    
+            del(S)
             
-        #Compress input matrix
-        Ac = S.dot(A)    
-        del(S)
+        elif sdist=='spixel':
+            rrows = np.random.choice( np.arange(m), size=c, replace=False, p=None)
+            Ac =   np.array( A[ rrows , : ] , dtype = dat_type )
+      
         
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Split data into lef and right snapshot sequence
@@ -542,7 +553,16 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     l, W = sci.linalg.eig( M , right=True, overwrite_a=True )    
  
     omega = np.log(l) / dt
-         
+       
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    #Order
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    if order==True: 
+        sort_idx = sorted(range(len(omega.real)), key=lambda j: np.abs(omega[j]), reverse=False) 
+        W = W[  :, sort_idx ]
+        l = l[ sort_idx ] 
+        omega = omega[ sort_idx ]  
+          
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     #Compute DMD Modes 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
@@ -567,16 +587,6 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     if return_vandermonde==True: 
         V = np.fliplr(np.vander( l , N =  (n-1) ))     
         
-
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    #Order
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if order==True: 
-        sort_idx = sorted(range(len(omega.real)), key=lambda j: np.abs(omega[j]), reverse=False) 
-        F = F[  :, sort_idx ]
-        omega = omega[ sort_idx ]  
-        if return_amplitudes==True: b = b[ sort_idx ]
-        if return_vandermonde==True: V = V[ sort_idx ,  : ]
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Return
