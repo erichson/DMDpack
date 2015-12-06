@@ -17,21 +17,21 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     
     Randomized algorithm for computing the approximate low-rank singular value 
     decomposition of a rectangular (m, n) matrix `a` with target rank `k << n`. 
-    The input matrix a is factored as `a = U * diag(s) * Vt`. The right singluar 
+    The input matrix a is factored as `a = U * diag(s) * Vt`. The right singular 
     vectors are the columns of the real or complex unitary matrix `U`. The left 
     singular vectors are the columns of the real or complex unitary matrix `V`. 
     The singular values `s` are non-negative and real numbers.
 
-    The paramter `p` is a oversampling parameter to improve the approximation. 
+    The parameter `p` is a oversampling parameter to improve the approximation. 
     A value between 2 and 10 is recommended.
     
-    The paramter `q` specifies the number of normlized power iterations
+    The parameter `q` specifies the number of normalized power iterations
     (subspace iterations) to reduce the approximation error. This is recommended 
-    if the the singular values decay slowly and in practice 1 or 2 iterations 
-    achive good results. However, computing power iterations is increasing the
+    if the singular values decay slowly and in practice 1 or 2 iterations 
+    achieve good results. However, computing power iterations is increasing the
     computational time. 
     
-    If k > (n/1.5), partial SVD or trancated SVD might be faster. 
+    If k > (n/1.5), partial SVD or truncated SVD might be faster.  
     
     
     Parameters

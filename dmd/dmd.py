@@ -20,11 +20,10 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     Dynamic Mode Decomposition.
 
     Dynamic Mode Decomposition (DMD) is a data processing algorithm which
-    allows to decompose a matrix `a` in space and time.
-    The matrix `a` is decomposed as `a = FBV`, where the columns of `F`
-    contain the dynamic modes. The modes are ordered corresponding
-    to the amplitudes stored in the diagonal matrix `B`. `V` is a Vandermonde
-    matrix describing the temporal evolution.
+    allows to decompose a matrix `a` in space and time. The matrix `a` is 
+    decomposed as `a = FBV`, where the columns of `F` contain the dynamic modes.
+    The modes are ordered corresponding to the amplitudes stored in the diagonal 
+    matrix `B`. `V` is a Vandermonde matrix describing the temporal evolution.
 
 
     Parameters
@@ -62,7 +61,7 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
         
         'partial' : uses partial singular value decomposition.
         
-        'truncated' : uses trancated singular value decomposition.
+        'truncated' : uses truncated singular value decomposition.
     
     rsvd_type : str `{'standard', 'fast'}`
         'standard' : (default) Standard algorithm as described in [1, 2]. 
@@ -325,11 +324,10 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     Compressed Dynamic Mode Decomposition.
 
     Dynamic Mode Decomposition (DMD) is a data processing algorithm which
-    allows to decompose a matrix `a` in space and time.
-    The matrix `a` is decomposed as `a = FBV`, where the columns of `F`
-    contain the dynamic modes. The modes are ordered corresponding
-    to the amplitudes stored in the diagonal matrix `B`. `V` is a Vandermonde
-    matrix describing the temporal evolution.
+    allows to decompose a matrix `a` in space and time. The matrix `a` is 
+    decomposed as `a = FBV`, where the columns of `F` contain the dynamic modes.
+    The modes are ordered corresponding to the amplitudes stored in the diagonal 
+    matrix `B`. `V` is a Vandermonde matrix describing the temporal evolution.
 
 
     Parameters
@@ -375,7 +373,7 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
         
         'partial' : uses partial singular value decomposition.
         
-        'truncated' : uses trancated singular value decomposition.
+        'truncated' : uses truncated singular value decomposition.
     
     rsvd_type : str `{'standard', 'fast'}`
         'standard' : (default) Standard algorithm as described in [1, 2]. 
