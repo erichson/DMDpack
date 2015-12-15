@@ -163,15 +163,15 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     #If q > 0 perfrom q subspace iterations
     #Note: check_finite=False may give a performance gain
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~      
-    
+    s=1 #control parameter for number of orthogonalizations
     if q > 0:
         for i in np.arange( 1, q+1 ):
-            if( (2*i-2) % q == 0 ):
+            if( (2*i-2) % s == 0 ):
                 Y , _ = sci.linalg.qr( Y , mode='economic', check_finite=True )
             
             Z = np.dot( A.conj().T , Y )
             
-            if( (2*i-1) % q == 0 ):
+            if( (2*i-1) % s == 0 ):
                 Z , _ = sci.linalg.qr( Z , mode='economic', check_finite=True)
        
             Y = np.dot( A , Z )
