@@ -7,15 +7,18 @@ Dynamic Mode Decomposition (DMD) python function.
 from __future__ import division
 import numpy as np
 import scipy as sci
+from scipy import linalg
 import scipy.sparse.linalg as scislin
+
 from numpy.testing import assert_raises
  
-from rla import rsvd
+from rsvd import rsvd
+from hfun import *
     
 
 def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
         return_amplitudes=False, return_vandermonde=False, 
-        svd='partial', rsvd_type='fast', sdist='punif', order=True):
+        svd='partial', rsvd_type='fast', sdist='unif', order=True):
     """
     Dynamic Mode Decomposition.
 
@@ -68,15 +71,11 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
         
         'fast' : Version II algorithm as described in [2].  
     
-    sdist : str `{'unif', 'punif', 'norm', 'sparse'}`
+    sdist : str `{'unif', 'norm'}`
         'unif' : Uniform `[-1,1]`.
-        
-        'punif' : Uniform `[0,1]`.
-        
-        'norm' : Normal `~N(0,1)`.
-        
-        'sparse' : Sparse uniform `[-1,1]`.
     
+        'norm' : Normal `~N(0,1)`.
+            
     order :  bool `{True, False}`
         True: return modes sorted.
 
@@ -195,23 +194,27 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     if  dat_type == np.float32: 
         isreal = True
         real_type = np.float32
+        fT = rT
     elif dat_type == np.float64: 
         isreal = True
         real_type = np.float64  
+        fT = rT
     elif dat_type == np.complex64:
         isreal = False 
         real_type = np.float32
+        fT = cT
     elif dat_type == np.complex128:
         isreal = False 
         real_type = np.float64
+        fT = cT
     else:
-        return "A.dtype is not supported"
+        raise ValueError('A.dtype is not supported')
         
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Split data into lef and right snapshot sequence
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    X = A[ : , range( 0 , n-1 ) ] #pointer
-    Y = A[ : , range( 1 , n ) ] #pointer   
+    X = A[ : , xrange( 0 , n-1 ) ] #pointer
+    Y = A[ : , xrange( 1 , n ) ] #pointer   
      
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Singular Value Decomposition
@@ -234,9 +237,9 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
                                   full_matrices=False, 
                                   overwrite_a=False,
                                   check_finite=True)
-            U = U[ : , range(k) ]
-            s = s[ range(k) ]
-            Vh = Vh[ range(k) , : ]
+            U = U[ : , xrange(k) ]
+            s = s[ xrange(k) ]
+            Vh = Vh[ xrange(k) , : ]
     
         else: 
             raise ValueError('SVD algorithm is not supported.')
@@ -254,9 +257,9 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     #complex: M = U.H * Y * Vt.H * S**-1
     #Let G = Y * Vt.H * S**-1, hence M = M * G
 
-    Vscaled = Vh.conj().T * s**-1
+    Vscaled = fT(Vh)  * s**-1
     G = np.dot( Y , Vscaled ) 
-    M = np.dot( U.conj().T , G )
+    M = np.dot( fT(U), G )
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Eigen Decomposition
@@ -269,7 +272,7 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     #Order
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if order==True: 
-        sort_idx = sorted(range(len(omega.real)), key=lambda j: np.abs(omega[j]), reverse=False) 
+        sort_idx = sorted(xrange(len(omega.real)), key=lambda j: np.abs(omega[j]), reverse=False) 
         W = W[  :, sort_idx ]
         l = l[ sort_idx ] 
         omega = omega[ sort_idx ]  
@@ -317,7 +320,7 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
      
 
 
-def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
+def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=0.9, p=5, q=2, modes='exact',
          return_amplitudes=False, return_vandermonde=False, svd='rsvd', 
          rsvd_type='fast', order=True, trace=True):
     """
@@ -431,17 +434,21 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     if  dat_type == np.float32: 
         isreal = True
         real_type = np.float32
+        fT = rT
     elif dat_type == np.float64: 
         isreal = True
-        real_type = np.float64  
+        real_type = np.float64 
+        fT = rT
     elif dat_type == np.complex64:
         isreal = False 
         real_type = np.float32
+        fT = cT
     elif dat_type == np.complex128:
         isreal = False 
         real_type = np.float64
+        fT = cT
     else:
-        return "A.dtype is not supported"
+        raise ValueError('A.dtype is not supported')
 
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -460,7 +467,7 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
             Ac = S.dot(A)    
             del(S)
             
-        if sdist=='punif':   
+        elif sdist=='punif':   
             S = np.array( np.random.uniform( 0 , 1 , size=( c, m ) ) , dtype = dat_type ) 
             if isreal==False: 
                 S += 1j * np.array( np.random.uniform(0 , 1 , size=( c, m ) ) , dtype = dat_type )
@@ -493,12 +500,13 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
             rrows = np.random.choice( np.arange(m), size=c, replace=False, p=None)
             Ac =   np.array( A[ rrows , : ] , dtype = dat_type )
       
-        
+        else: 
+            raise ValueError('Sampling distribution is not supported.')    
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Split data into lef and right snapshot sequence
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
-    X = Ac[ : , range( 0 , n-1 ) ] #pointer
-    Y = Ac[ : , range( 1 , n ) ] #pointer   
+    X = Ac[ : , xrange( 0 , n-1 ) ] #pointer
+    Y = Ac[ : , xrange( 1 , n ) ] #pointer   
      
      
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -522,9 +530,9 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
                                   full_matrices=False, 
                                   overwrite_a=False,
                                   check_finite=True)
-            U = U[ : , range(k) ]
-            s = s[ range(k) ]
-            Vh = Vh[ range(k) , : ]
+            U = U[ : , xrange(k) ]
+            s = s[ xrange(k) ]
+            Vh = Vh[ xrange(k) , : ]
     
         else: 
             raise ValueError('SVD algorithm is not supported.')
@@ -541,9 +549,9 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     #real: M = U.T * Y * Vt.T * S**-1
     #complex: M = U.H * Y * Vt.H * S**-1
     #Let G = Y * Vt.H * S**-1, hence M = M * G
-    Vscaled = Vh.conj().T * s**-1
+    Vscaled = fT(Vh) * s**-1
     G = np.dot( Y , Vscaled )
-    M = np.dot( U.conj().T , G ) 
+    M = np.dot( fT(U) , G ) 
      
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Eigen Decomposition
@@ -556,7 +564,7 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     #Order
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if order==True: 
-        sort_idx = sorted(range(len(omega.real)), key=lambda j: np.abs(omega[j]), reverse=False) 
+        sort_idx = sorted(xrange(len(omega.real)), key=lambda j: np.abs(omega[j]), reverse=False) 
         W = W[  :, sort_idx ]
         l = l[ sort_idx ] 
         omega = omega[ sort_idx ]  
@@ -565,9 +573,9 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=3, p=5, q=2, modes='exact',
     #Compute DMD Modes 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     if modes=='exact': 
-        F = np.dot( A[ : , range( 1 , n ) ] , np.dot( Vscaled , W ) )   
+        F = np.dot( A[ : , xrange( 1 , n ) ] , np.dot( Vscaled , W ) )   
     elif modes=='exact_scaled':  
-        F = np.dot( A[ : , range( 1 , n ) ] , np.dot( Vscaled , W ) ) * ( 1/l )
+        F = np.dot( A[ : , xrange( 1 , n ) ] , np.dot( Vscaled , W ) ) * ( 1/l )
     else: 
         raise ValueError('Type of modes is not supported, choose "exact" or "standard".')
     
