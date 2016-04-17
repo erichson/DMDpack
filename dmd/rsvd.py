@@ -176,7 +176,7 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
      #End if       
         
     Q , _ = sci.linalg.qr( Y ,  mode='economic' , check_finite=False, overwrite_a=True ) 
-    del(Y,Z)
+    del(Y)
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Project the data matrix a into a lower dimensional subspace
