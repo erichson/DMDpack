@@ -272,7 +272,7 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     #Order
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if order==True: 
-        sort_idx = sorted(xrange(len(omega.real)), key=lambda j: np.abs(omega[j]), reverse=False) 
+        sort_idx = np.argsort(np.abs(omega))
         W = W[  :, sort_idx ]
         l = l[ sort_idx ] 
         omega = omega[ sort_idx ]  
@@ -564,7 +564,7 @@ def cdmd(A, dt = 1, k=None, c=None, sdist='norm', sf=0.9, p=5, q=2, modes='exact
     #Order
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if order==True: 
-        sort_idx = sorted(xrange(len(omega.real)), key=lambda j: np.abs(omega[j]), reverse=False) 
+        sort_idx = np.argsort(np.abs(omega)) 
         W = W[  :, sort_idx ]
         l = l[ sort_idx ] 
         omega = omega[ sort_idx ]  
