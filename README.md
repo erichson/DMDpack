@@ -56,15 +56,15 @@ The high-dimensional signal `S` is superimposed as a time-independent signal `S1
 ![toy](https://raw.githubusercontent.com/Benli11/data/master/img/dmd_toy_data.png)
 
 
-DMD is a data processing algorithm which allows to decompose a matrix `S` in space and time.
-The matrix `S` is decomposed as `S = FBV`, where the columns of `F` contain the dynamic modes. The modes are ordered corresponding 
-to the amplitudes stored in the diagonal matrix `B`. `V` is a Vandermonde matrix describing the temporal evolution. Hence, using the dynamic mode decompositoin, we aim to seperate `S` into its underlying components, as follows
+DMD is a data processing algorithm which decomposes a matrix `S` in space and time.
+The matrix `S` is decomposed as `S = FBV`, where the columns of `F` contain the dynamic modes. The modes are ordered according 
+to the amplitudes stored in the diagonal matrix `B`. `V` is a Vandermonde matrix describing the temporal evolution. Hence, using the dynamic mode decomposition, we aim to separate `S` into its underlying components, as follows
 ```python
 Fmodes, b, V, omega = dmd(F.T, dt=dt, k=k, return_vandermonde=True, return_amplitudes=True)
 ```
 Plotting the continuous-time eigenvalues:
 ![mode](https://raw.githubusercontent.com/Benli11/data/master/img/dmd_toy_modes.png) 
-we see that `S` is indeed superimposed from two underlying signals, i.e., mode 1 and 2. All the other modes are bounded far away from the origin and can be considered as instable, i.e, not relevant for recovering the underlying signals. Hence, we can approximate `S`, `S1` and `S2` as follows:
+we see that `S` is indeed superimposed from two underlying signals, i.e., mode 1 and 2. All the other modes are bounded far away from the origin and can be considered as unstable, i.e, not relevant for recovering the underlying signals. Hence, we can approximate `S`, `S1` and `S2` as follows:
 
 ```python
 Sre = (Fmodes[:,0:2]*b[0:2]).dot(V[0:2,:]).T
@@ -74,14 +74,14 @@ S2re = (Fmodes[:,1:2]*b[1]).dot(V[1:2,:]).T
 Plotting the approximated signals, we indeed capture the underlying signals faithfully
 ![dmdre](https://raw.githubusercontent.com/Benli11/data/master/img/dmd_toy_dmd.png)
 
-The visual evidence is convincing, let's comput the approximation error in additon:
+The visual evidence is convincing, let's compute the approximation error in addition:
 
 ```python
 print(np.linalg.norm(S-Sre, 'fro')/np.linalg.norm(S, 'fro')*100)
 print(np.linalg.norm(S1-S1re, 'fro')/np.linalg.norm(S1, 'fro')*100)
 print(np.linalg.norm(S2-S2re, 'fro')/np.linalg.norm(S2, 'fro')*100)
 ```
-which supports the visiual evidence
+which supports the visual evidence
 ```
 2.82741507892e-12
 1.60385599574e-12
