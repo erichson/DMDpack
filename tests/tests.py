@@ -8,7 +8,7 @@ from dmd import *
 from unittest import main, makeSuite, TestCase, TestSuite
 from numpy.testing import assert_raises
 
-atol_float32 = 1e-4
+atol_float32 = 1e-3
 atol_float64 = 1e-8
 
 
