@@ -116,7 +116,7 @@ class test_dmd(TestCase):
         
         Fmodes, b, V, omega = dmd(A, k=2, modes='standard', svd='partial', return_amplitudes=True, return_vandermonde=True)
         Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
-        assert np.allclose(A[:,0:59], Atilde, atol_float64)   
+        assert np.allclose(A, Atilde, atol_float64)   
 
     def test_dmd_exact(self):
         # Define time and space discretizations
@@ -131,7 +131,7 @@ class test_dmd(TestCase):
         
         Fmodes, b, V, omega = dmd(A, k=2, modes='exact', svd='partial', return_amplitudes=True, return_vandermonde=True)
         Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
-        assert np.allclose(A[:,0:59], Atilde, atol_float64)  
+        assert np.allclose(A, Atilde, atol_float64)  
 
     def test_rdmd_standard(self):
         # Define time and space discretizations
@@ -146,7 +146,7 @@ class test_dmd(TestCase):
         
         Fmodes, b, V, omega = dmd(A, k=2, modes='standard', svd='rsvd', p=2, q=2, return_amplitudes=True, return_vandermonde=True)
         Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
-        assert np.allclose(A[:,0:59], Atilde, atol_float64) 
+        assert np.allclose(A, Atilde, atol_float64) 
 
     def test_rdmd_exact(self):
         # Define time and space discretizations
@@ -161,7 +161,7 @@ class test_dmd(TestCase):
         
         Fmodes, b, V, omega = dmd(A, k=2, modes='exact', svd='rsvd', p=2, q=2, return_amplitudes=True, return_vandermonde=True)
         Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
-        assert np.allclose(A[:,0:59], Atilde, atol_float64) 
+        assert np.allclose(A, Atilde, atol_float64) 
      
     def test_cdmd_exact(self):
         # Define time and space discretizations
@@ -176,7 +176,7 @@ class test_dmd(TestCase):
         
         Fmodes, b, V, omega = cdmd(A, k=2, modes='exact', svd='truncated', c=10, return_amplitudes=True, return_vandermonde=True)
         Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
-        assert np.allclose(A[:,0:59], Atilde, atol_float64) 
+        assert np.allclose(A, Atilde, atol_float64) 
 
 
 #
