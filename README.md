@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/Benli11/rSVD.svg?branch=master)](https://travis-ci.org/Benli11/DMDpack)
 Dynamic Mode Decomposition
 ***************************
 The dynamic mode decomposition (DMD) is an equation-free, data-driven matrix decomposition that is capable of providing 
