@@ -112,7 +112,7 @@ class test_dmd(TestCase):
         # Create two patio-temporal patterns
         F1 = 0.5* np.cos(X)*(1.+0.* T)
         F2 = ( (1./np.cosh(X)) * np.tanh(X)) *(2.*np.exp(1j*2.8*T))
-        A = np.array((F1+F2).T, np.complex128, order='C')
+        A = np.array((F1+F2).T, order='C')
         
         Fmodes, b, V, omega = dmd(A, k=2, modes='standard', svd='partial', return_amplitudes=True, return_vandermonde=True)
         Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
@@ -127,7 +127,7 @@ class test_dmd(TestCase):
         # Create two patio-temporal patterns
         F1 = 0.5* np.cos(X)*(1.+0.* T)
         F2 = ( (1./np.cosh(X)) * np.tanh(X)) *(2.*np.exp(1j*2.8*T))
-        A = np.array((F1+F2).T, np.complex128, order='C')
+        A = np.array((F1+F2).T, order='C')
         
         Fmodes, b, V, omega = dmd(A, k=2, modes='exact', svd='partial', return_amplitudes=True, return_vandermonde=True)
         Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
@@ -142,7 +142,7 @@ class test_dmd(TestCase):
         # Create two patio-temporal patterns
         F1 = 0.5* np.cos(X)*(1.+0.* T)
         F2 = ( (1./np.cosh(X)) * np.tanh(X)) *(2.*np.exp(1j*2.8*T))
-        A = np.array((F1+F2).T, np.complex128, order='C')
+        A = np.array((F1+F2).T, order='C')
         
         Fmodes, b, V, omega = dmd(A, k=2, modes='standard', svd='rsvd', p=2, q=2, return_amplitudes=True, return_vandermonde=True)
         Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
@@ -157,7 +157,7 @@ class test_dmd(TestCase):
         # Create two patio-temporal patterns
         F1 = 0.5* np.cos(X)*(1.+0.* T)
         F2 = ( (1./np.cosh(X)) * np.tanh(X)) *(2.*np.exp(1j*2.8*T))
-        A = np.array((F1+F2).T, np.complex128, order='C')
+        A = np.array((F1+F2).T, order='C')
         
         Fmodes, b, V, omega = dmd(A, k=2, modes='exact', svd='rsvd', p=2, q=2, return_amplitudes=True, return_vandermonde=True)
         Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
@@ -172,9 +172,9 @@ class test_dmd(TestCase):
         # Create two patio-temporal patterns
         F1 = 0.5* np.cos(X)*(1.+0.* T)
         F2 = ( (1./np.cosh(X)) * np.tanh(X)) *(2.*np.exp(1j*2.8*T))
-        A = np.array((F1+F2).T, np.complex128, order='C')
+        A = np.array((F1+F2).T, order='C')
         
-        Fmodes, b, V, omega = cdmd(A, k=2, modes='exact', svd='truncated', c=10, return_amplitudes=True, return_vandermonde=True)
+        Fmodes, b, V, omega = cdmd(A, k=2, p=10, sdist='sparse', return_amplitudes=True, return_vandermonde=True)
         Atilde = Fmodes.dot( np.dot(np.diag(b), V))        
         assert np.allclose(A, Atilde, atol_float64) 
 

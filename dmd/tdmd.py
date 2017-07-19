@@ -1,6 +1,6 @@
 """
 
-Dynamic Mode Decomposition (DMD) python function.
+TLS Dynamic Mode Decomposition (DMD) python function.
 
 """
 
@@ -16,11 +16,11 @@ from rsvd import rsvd
 from hfun import *
     
 
-def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
+def tdmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
         return_amplitudes=False, return_vandermonde=False, 
-        svd='truncated', sdist='unif', order=True):
+        svd='truncated', rsvd_type='fast', sdist='unif', order=True):
     """
-    Dynamic Mode Decomposition.
+    TLS Dynamic Mode Decomposition.
 
     Dynamic Mode Decomposition (DMD) is a data processing algorithm which
     allows to decompose a matrix `a` in space and time. The matrix `a` is 
@@ -65,6 +65,11 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
         'partial' : uses partial singular value decomposition.
         
         'truncated' : uses truncated singular value decomposition.
+    
+    rsvd_type : str `{'standard', 'fast'}`
+        'standard' : (default) Standard algorithm as described in [1, 2]. 
+        
+        'fast' : Version II algorithm as described in [2].  
     
     sdist : str `{'unif', 'norm'}`
         'unif' : Uniform `[-1,1]`.
@@ -211,52 +216,45 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     X = A[ : , xrange( 0 , n-1 ) ] #pointer
     Y = A[ : , xrange( 1 , n ) ] #pointer   
      
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Singular Value Decomposition
-    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~        
-    if k != None:
-        if svd=="rsvd":
-            U, s, Vh = rsvd( X, k=k , p=p , q=q , sdist=sdist)  
-        
-        elif svd=="partial":    
-            U, s, Vh = scislin.svds( X , k=k )   
-            # reverse the n first columns of u
-            U[ : , :k ] = U[ : , k-1::-1 ]
-            # reverse s
-            s = s[ ::-1 ]
-            # reverse the n first rows of vt
-            Vh[ :k , : ] = Vh[ k-1::-1 , : ]     
-        
-        elif svd=="truncated":
-            U, s, Vh = sci.linalg.svd( X ,  compute_uv=True,
+    #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~           
+    _, s , Vh = sci.linalg.svd( np.bmat([X],[Y]) ,  compute_uv=True,
                                   full_matrices=False, 
                                   overwrite_a=False,
-                                  check_finite=True)
-            U = U[ : , xrange(k) ]
-            s = s[ xrange(k) ]
-            Vh = Vh[ xrange(k) , : ]
-    
-        else: 
-            raise ValueError('SVD algorithm is not supported.')
-    else:
-         U, s, Vh = sci.linalg.svd( X ,  compute_uv=True,
-                                  full_matrices=False, 
-                                  overwrite_a=False,
-                                  check_finite=True)
-                                
-    #EndIf    
+                                  check_finite=True)    
+   
 
+    k1 = optht(n/(m*2), sv=s, sigma=None)
+    print('Optimal hard threshold: ', k1)
+   
+    VV = Vh[xrange(k1) , :].T.dot(Vh[xrange(k1) , :])
+    Xbar = X.dot(VV)      
+    Ybar = Y.dot(VV)
+    
+    
+    Ubar, sbar, Vhbar= sci.linalg.svd( Xbar ,  compute_uv=True,
+                                  full_matrices=False, 
+                                  overwrite_a=False,
+                                  check_finite=True)  
+                                  
+          
+    if k==None:
+        k = optht(Xbar, sbar)
+        print('Optimal hard threshold: ', k)
+   
+                        
+    Ubar = Ubar[ : , xrange(k) ]
+    sbar = sbar[ xrange(k) ]
+    Vhbar = Vhbar[ xrange(k) , : ]                              
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Solve the LS problem to find estimate for M using the pseudo-inverse    
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    
-    #real: M = U.T * Y * Vt.T * S**-1
-    #complex: M = U.H * Y * Vt.H * S**-1
-    #Let G = Y * Vt.H * S**-1, hence M = M * G
-
-    Vscaled = fT(Vh)  * s**-1
-    G = np.dot( Y , Vscaled ) 
-    M = np.dot( fT(U), G )
-    
+    Vscaled = Vhbar.T * sbar**-1
+    G = np.dot( Ybar , Vscaled )
+    M = np.dot( Ubar.T , G ) 
+      
+     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Eigen Decomposition
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -276,14 +274,8 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     #Compute DMD Modes 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-    if modes=='standard': 
-        F = np.dot( U , W )    
-    elif modes=='exact': 
-        F = np.dot( G , W )
-    elif modes=='exact_scaled':     
-        F = np.dot((1/l) * G , W )
-    else: 
-        raise ValueError('Type of modes is not supported, choose "exact" or "standard".')
+    F = np.dot( Ubar , W )    
+
     
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Compute amplitueds b using least-squares: Fb=x1
@@ -296,7 +288,7 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     #Compute Vandermonde matrix
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     if return_vandermonde==True: 
-        V = np.fliplr(np.vander( l , N =  n ))     
+        V = np.fliplr(np.vander( l , N =  (n-1) ))     
         
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -307,10 +299,10 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     elif return_amplitudes==True and return_vandermonde==False:
         return F, b, omega
     else:
-        return F, omega, s
+        return F, omega, sbar    
   
     #**************************************************************************   
     #End dmd
     #**************************************************************************  
      
-    
+     

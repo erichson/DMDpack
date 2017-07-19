@@ -1,4 +1,6 @@
-from .dmd import dmd, cdmd
+from .dmd import dmd
+from .cdmd import cdmd
+from .tdmd import tdmd
 from .rsvd import rsvd
 from .hfun import rT, cT
 
