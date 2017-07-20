@@ -13,7 +13,7 @@ from numpy.testing import assert_raises
 from hfun import *
    
 
-def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
+def rsvd(A, k=None, p=0, q=0, method='standard', sdist='uniform'):
     """
     Randomized Singular Value Decomposition.
     
@@ -55,7 +55,7 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
         
         'fast' : Version II algorithm as described in [2].                 
     
-    sdist : str `{'unif', 'norm'}`
+    sdist : str `{'uniform', 'normal'}`
     
     
     Returns
@@ -135,15 +135,15 @@ def rsvd(A, k=None, p=0, q=0, method='standard', sdist='unif'):
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Generate a random sampling matrix O
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    if sdist=='unif':   
+    if sdist=='uniform':   
         O = np.array( np.random.uniform( -1 , 1 , size=( n, k+p ) ) , dtype = dat_type ) 
         if isreal==False: 
-            O += 1j * np.array( np.random.uniform(-1 , 1 , size=( n, k+p  ) ) , dtype = dat_type )
+            O += 1j * np.array( np.random.uniform(-1 , 1 , size=( n, k+p  ) ) , dtype = real_type )
       
-    elif sdist=='norm':   
+    elif sdist=='normal':   
         O = np.array( np.random.standard_normal( size=( n, k+p  ) ) , dtype = dat_type ) 
         if isreal==False: 
-            O += 1j * np.array( np.random.standard_normal( size=( n, k+p  ) ) , dtype = dat_type )     
+            O += 1j * np.array( np.random.standard_normal( size=( n, k+p  ) ) , dtype = real_type )     
 
     else: 
         raise ValueError('Sampling distribution is not supported.')    

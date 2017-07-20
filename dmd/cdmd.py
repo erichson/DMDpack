@@ -16,7 +16,7 @@ from rsvd import rsvd
 from hfun import *
     
 
-def cdmd(A, dt = 1, k=None, p=10, sdist='sparse', sf=0.9, modes='exact',
+def cdmd(A, dt = 1, k=None, p=10, sdist='sparse', sf=0.9,
          return_amplitudes=False, return_vandermonde=False, order=True, trace=True):
     """
     Compressed Dynamic Mode Decomposition.
@@ -42,17 +42,12 @@ def cdmd(A, dt = 1, k=None, p=10, sdist='sparse', sf=0.9, modes='exact',
     p : int, optional
         Oversampling paramater.         
     
-    sdist : str `{'unif', 'norm', 'sparse', 'spixel'}`  
+    sdist : str `{'uniform', 'normal', 'sparse', 'spixel'}`  
         Specify the distribution of the sensing matrix `S`. 
     
     sf : int, optional
         `sf` sets the sparsity factor for the `sparse` sdist, i.e. `sf=0.9` means
         `90%` of the sensing matrix `S` entries are zero.
-    
-    modes : str `{'exact', 'exact_scaled'}`
-        'exact' : computes the exact dynamic modes, `F = Y * V * (S**-1) * W`.    
-        
-        'exact_scaled' : computes the exact dynamic modes, `F = (1/l) * Y * V * (S**-1) * W`.
     
     return_amplitudes : bool `{True, False}` 
         True: return amplitudes in addition to dynamic modes. 
@@ -69,12 +64,14 @@ def cdmd(A, dt = 1, k=None, p=10, sdist='sparse', sf=0.9, modes='exact',
     F : array_like
         Matrix containing the dynamic modes of shape `(m, n-1)`  or `(m, k)`.
     
-    b : array_like
+    b : array_like, if `return_amplitudes=True`
         1-D array containing the amplitudes of length `min(n-1, k)`.
     
-    V : array_like
+    V : array_like, if `return_vandermonde=True`
         Vandermonde matrix of shape `(n-1, n-1)`  or `(k, n-1)`.
 
+    omega : array_like
+        Time scaled eigenvalues: `ln(l)/dt`. 
 
     Notes
     -----
@@ -132,7 +129,7 @@ def cdmd(A, dt = 1, k=None, p=10, sdist='sparse', sf=0.9, modes='exact',
     #Compress
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     Ac = A
-    if sdist=='unif':   
+    if sdist=='uniform':   
             S = np.array( np.random.uniform( -1 , 1 , size=( k+p, m ) ) , dtype = dat_type ) 
             if isreal==False: 
                 S += 1j * np.array( np.random.uniform(-1 , 1 , size=( k+p, m ) ) , dtype = real_type )
@@ -140,7 +137,7 @@ def cdmd(A, dt = 1, k=None, p=10, sdist='sparse', sf=0.9, modes='exact',
             Ac = S.dot(A)    
             del(S)
 
-    elif sdist=='norm':   
+    elif sdist=='normal':   
             S = np.array( np.random.standard_normal( size=( k+p, m ) ) , dtype = dat_type ) 
             if isreal==False: 
                 S += 1j * np.array( np.random.standard_normal( size=( k+p, m ) ) , dtype = real_type )     
@@ -223,13 +220,8 @@ def cdmd(A, dt = 1, k=None, p=10, sdist='sparse', sf=0.9, modes='exact',
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
     #Compute DMD Modes 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ 
-    if modes=='exact': 
-        F = np.dot( A[ : , xrange( 1 , n ) ] , np.dot( Vscaled , W ) )   
-    elif modes=='exact_scaled':  
-        F = np.dot( A[ : , xrange( 1 , n ) ] , np.dot( Vscaled , W ) ) * ( 1/l )
-    else: 
-        raise ValueError('Type of modes is not supported, choose "exact" or "standard".')
-    
+    F = np.dot( A[ : , xrange( 1 , n ) ] , np.dot( Vscaled , W ) )   
+
 
     #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     #Compute amplitueds b using least-squares: Fb=x1

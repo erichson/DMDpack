@@ -10,21 +10,30 @@ import scipy as sci
 from scipy import linalg
 import scipy.sparse.linalg as scislin
 
-from numpy.testing import assert_raises
  
 from rsvd import rsvd
-from hfun import *
+
+#matrix transpose for real matricies
+def rT(A): 
+    return A.T
     
+#matrix transpose for complex matricies
+def cT(A): 
+    return A.conj().T      
+
+    
+
+
 
 def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
         return_amplitudes=False, return_vandermonde=False, 
-        svd='truncated', sdist='unif', order=True):
+        svd='truncated', sdist='uniform', order=True):
     """
     Dynamic Mode Decomposition.
 
     Dynamic Mode Decomposition (DMD) is a data processing algorithm which
-    allows to decompose a matrix `a` in space and time. The matrix `a` is 
-    decomposed as `a = FBV`, where the columns of `F` contain the dynamic modes.
+    allows to decompose a matrix `A` in space and time. The matrix `A` is 
+    decomposed as `A = F * B * V`, where the columns of `F` contain the dynamic modes.
     The modes are ordered corresponding to the amplitudes stored in the diagonal 
     matrix `B`. `V` is a Vandermonde matrix describing the temporal evolution.
 
@@ -66,10 +75,10 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
         
         'truncated' : uses truncated singular value decomposition.
     
-    sdist : str `{'unif', 'norm'}`
-        'unif' : Uniform `[-1,1]`.
+    sdist : str `{'uniform', 'normal'}`
+        'uniform' : Uniform `[-1,1]`.
     
-        'norm' : Normal `~N(0,1)`.
+        'normal' : Normal `~N(0,1)`.
             
     order :  bool `{True, False}`
         True: return modes sorted.
@@ -79,15 +88,16 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     -------
     F : array_like
         Matrix containing the dynamic modes of shape `(m, n-1)`  or `(m, k)`.
-   
-    b : array_like, optional
+    
+    b : array_like, if `return_amplitudes=True`
         1-D array containing the amplitudes of length `min(n-1, k)`.
     
-    V : array_like, optional
+    V : array_like, if `return_vandermonde=True`
         Vandermonde matrix of shape `(n-1, n-1)`  or `(k, n-1)`.
-    
+
     omega : array_like
         Time scaled eigenvalues: `ln(l)/dt`. 
+
 
 
     Notes
