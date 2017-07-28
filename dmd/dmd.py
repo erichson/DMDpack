@@ -317,7 +317,7 @@ def dmd(A, dt = 1, k=None, p=5, q=2, modes='exact',
     elif return_amplitudes==True and return_vandermonde==False:
         return F, b, omega
     else:
-        return F, omega, s
+        return F, omega
   
     #**************************************************************************   
     #End dmd
